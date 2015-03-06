@@ -5,7 +5,7 @@ const int _CT_PIN = A1;
 float supplyVoltage = 0.0;
 float supplyAmp = 0.0;
 float supplyFrequency = 0.0;
-float totalWattSeconds = 0.0;
+float totalKWattSeconds = 0.0;
 
 //data for internal calculations
 float _vcc = 0;
@@ -182,10 +182,10 @@ void loop()
 	measureSupplyAmperage();
 	unsigned long t2 = millis();
 	//calculate ws
-	float wattDelta = supplyVoltage * supplyAmp; 
+	float kWattDelta = (supplyVoltage * supplyAmp)/1000.0; 
 	long tDelta = t2 - t1 ; //in millis
-	float wsDelta = (wattDelta * tDelta)/1000.0;
-	totalWattSeconds += wsDelta;
+	float kwsDelta = (kWattDelta * tDelta)/1000.0;
+	totalKWattSeconds += kwsDelta;
 
 	//measure frequency
 	if(supplyVoltage > 0){
@@ -198,8 +198,7 @@ void loop()
 	serialPrint(String(supplyVoltage),"V");
 	serialPrint(String(supplyAmp),"A");
 	serialPrint(String(supplyFrequency),"Hz");
-	serialPrint(String(totalWattSeconds),"WS");
+	serialPrint(String(totalKWattSeconds),"KWS");
 }
-
 
 
