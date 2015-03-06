@@ -177,13 +177,28 @@ void setup()
 
 void loop()
 {
-	unsigned long calculateBegins = millis();
+	unsigned long t1 = millis();
 	measureSupplyVoltage();
 	measureSupplyAmperage();
-	unsigned long calculationsEnds = millis();
+	unsigned long t2 = millis();
+	//calculate ws
+	float wattDelta = supplyVoltage * supplyAmp; 
+	long tDelta = t2 - t1 ; //in millis
+	float wsDelta = (wattDelta * tDelta)/1000.0;
+	totalWattSeconds += wsDelta;
+
+	//measure frequency
+	if(supplyVoltage > 0){
+		measureSupplyFrequency();
+	}else{
+		supplyFrequency = 0;
+	}
+
 
 	serialPrint(String(supplyVoltage),"V");
 	serialPrint(String(supplyAmp),"A");
+	serialPrint(String(supplyFrequency),"Hz");
+	serialPrint(String(totalWattSeconds),"WS");
 }
 
 
