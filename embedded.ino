@@ -1,3 +1,9 @@
+/**
+ * Author : kdkanishka@gmail.com
+ */
+#include <Wire.h>
+#define SLAVE_ADDRESS 0x04
+
 // Arduino PIN definitions
 const int _VIN_PIN = A0;
 const int _CT_PIN = A1;
@@ -6,6 +12,13 @@ float supplyVoltage = 0.0;
 float supplyAmp = 0.0;
 float supplyFrequency = 0.0;
 float totalKWattSeconds = 0.0;
+int statPos = 1; //keeps track of which stat type to be sent when requested by the master
+/**
+ * 1 -> supplyVoltage
+ * 2 -> supplyAmp
+ * 3 -> supplyFrequency
+ * 4 -> totalKWattSeconds
+ */
 
 //data for internal calculations
 float _vcc = 0;
@@ -163,16 +176,68 @@ bool _hasPeak(int r,int shift,int *samples){
  return hasPeak; 
 }
 
+/**
+ * Better serial log
+ */
 void serialPrint(String pref,String sufx){
 	Serial.print(pref);Serial.println(sufx);
 }
 
+/**
+ * Master calls with some data
+ */
+void dataReceived(int nBytes){
+	while(Wire.available()){
+        int dataFromMaster = Wire.read();
+        serialPrint("Data received from Master :",String(dataFromMaster));
+    }
+}
+
+/**
+ * Master requests power stats, send those data to master
+ */
+void respondToMaster(){
+	switch(statPos) {
+	case 1:
+		writeToBus("230.12V");
+		sktatPos++;
+		break;
+	case 2:
+		writeToBus("30.12A");
+		statPos++;
+		break;
+	case 3:
+		writeToBus("50.12H");
+		statPos++;
+		break;
+	case 4:
+		writeToBus("12424355452233.44W");
+		statPos++;
+		break;
+	default:
+		statPos=2;
+		writeToBus("230.12V");
+	}
+}
+
+void writeToBus(String serializedStats){
+    serializedStats.concat(" ");
+	serialPrint("Serialized Stats => ",serializedStats);
+	char charBuf[serializedStats.length()];
+	serializedStats.toCharArray(charBuf, serializedStats.length());
+	Wire.write(charBuf);  
+}
 
 void setup()
 {
 	Serial.begin(9600);
 	_vcc = _readVcc()/1000.0;	
 	Serial.print("Internal VCC :");Serial.println(_vcc);
+
+	Wire.begin(SLAVE_ADDRESS); //now this is a slave
+	//callback functions for I2C bus
+	Wire.onReceive(dataReceived);
+	Wire.onRequest(respondToMaster);
 }
 
 void loop()
@@ -193,7 +258,6 @@ void loop()
 	}else{
 		supplyFrequency = 0;
 	}
-
 
 	serialPrint(String(supplyVoltage),"V");
 	serialPrint(String(supplyAmp),"A");
