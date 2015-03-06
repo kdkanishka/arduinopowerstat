@@ -51,8 +51,9 @@ void measureSupplyVoltage(){
 	if(inputVoltage <= 1){
 		inputVoltage = 0;
 	}
-	Serial.print(inputVoltage);
-	Serial.println(" V");
+	supplyVoltage = inputVoltage;
+	//Serial.print(inputVoltage);
+	//Serial.println(" V");
 }
 
 /**
@@ -73,7 +74,97 @@ void measureSupplyAmperage(){
 	float vRms = sqrt(zSq / samplingCount);
 	float roundedvRms = round(vRms * 100)/100.0; //round value to two decimal points
 	float amps = roundedvRms * ctMonFact;
-	Serial.print(amps);Serial.println("A");
+	supplyAmp = amps;
+	//Serial.print(amps);Serial.println("A");
+}
+
+/**
+ * Measure supply frequency
+ */
+void measureSupplyFrequency(){
+  int t1 = millis();
+  int sampleCount = 255;
+  int times[sampleCount];  
+  int samples[sampleCount];
+  
+  //sampling
+  for(int i=0;i<sampleCount;i++){
+     int sensorValue = analogRead(_VIN_PIN);
+     samples[i] = sensorValue;
+     times[i] = millis()-t1;
+     delayMicroseconds(39);
+  }
+  
+  //analyzing sampled data
+  //step 1 : find peak 1
+  int peakIdx1 = findPeakVal(0,sampleCount,samples,sampleCount);
+  if(peakIdx1 > -1){
+    //Serial.println(peakIdx1); 
+  }
+  int T1 = times[peakIdx1];
+  //step 2 : find peak 2
+  int peakIdx2 = findPeakVal(peakIdx1+1,sampleCount,samples,sampleCount);
+  if(peakIdx2 > -1){
+    //Serial.println(peakIdx2); 
+  }
+  int T2 = times[peakIdx2];
+  int T  = T2-T1;
+  //Serial.println(T);
+  float frequency = (1.0/T)*1000;
+  if(frequency>5){
+    //Serial.print("AC Voltage Frequency : "); Serial.println(frequency);
+    supplyFrequency = frequency;
+  }
+}
+
+//returns time index at the  value
+int findPeakVal(int from,int to,int *samples,int samplesSize){
+  int peakIdx = -1;
+  int r=0; int shift = 10;
+  for(r=from; r<samplesSize-shift ; r++){
+    //check has peak between the range (r to r+shift)
+    bool hasPeak = _hasPeak(r,shift,samples);
+    if(hasPeak==true){
+      //Serial.print("Peak found ");Serial.print(r);Serial.print(" ");Serial.println(r+shift);
+      //if a peak is detected in this range lets find the peak value index
+      int peakIndex = _findPeakIndex(r,r+shift,samples);
+      peakIdx = peakIndex;
+      //Serial.print("Peak index ");Serial.println(peakIndex);
+      break;
+    } 
+  }
+  return peakIdx;
+}
+
+int _findPeakIndex(int b1,int b2,int *samples){
+  int maxIdx = b1;
+  int maxVal = samples[b1];
+  for(int i=b1;i<=b2;i++){
+    if(samples[i]>=maxVal){
+      maxIdx = i;
+      maxVal = samples[i];
+    }
+  }
+  return maxIdx;
+}
+
+bool _hasPeak(int r,int shift,int *samples){
+ bool hasPeak = false;
+ //calculate average
+ int tot = 0;
+ for(int i=r; i<r+shift ; i++){
+   tot = tot + samples[i];
+ }
+ float average = tot * 1.0 / shift;
+ //if average if higher than or equals  boundary values this can be a 
+ if((samples[r] <= average) && (average >= samples[r+shift-1])){
+   hasPeak = true; 
+ }
+ return hasPeak; 
+}
+
+void serialPrint(String pref,String sufx){
+	Serial.print(pref);Serial.println(sufx);
 }
 
 
@@ -90,4 +181,10 @@ void loop()
 	measureSupplyVoltage();
 	measureSupplyAmperage();
 	unsigned long calculationsEnds = millis();
+
+	serialPrint(String(supplyVoltage),"V");
+	serialPrint(String(supplyAmp),"A");
 }
+
+
+
