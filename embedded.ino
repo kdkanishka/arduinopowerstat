@@ -7,6 +7,10 @@
 // Arduino PIN definitions
 const int _VIN_PIN = A0;
 const int _CT_PIN = A1;
+
+//Digital out pins
+const int KITCHEN_SW = 13;
+const int BEDROOM_SW = 12;
 //required data for Rpi
 float supplyVoltage = 0.0;
 float supplyAmp = 0.0;
@@ -190,6 +194,19 @@ void dataReceived(int nBytes){
 	while(Wire.available()){
         int dataFromMaster = Wire.read();
         serialPrint("Data received from Master :",String(dataFromMaster));
+        if(dataFromMaster==1){
+        	Serial.println("KITCHEN_SW ON");
+        	digitalWrite(KITCHEN_SW,HIGH);
+        }else if(dataFromMaster==2){
+        	Serial.println("KITCHEN_SW OFF");
+        	digitalWrite(KITCHEN_SW,LOW);
+        }else if(dataFromMaster==3){
+        	Serial.println("BEDROOM_SW ON");
+        	digitalWrite(BEDROOM_SW,HIGH);
+        }else if(dataFromMaster==4){
+        	Serial.println("BEDROOM_SW OFF");
+        	digitalWrite(BEDROOM_SW,LOW);
+        }
     }
 }
 
@@ -221,13 +238,13 @@ void respondToMaster(){
 }
 
 void sendAmp(){
-			String amperage = String(supplyAmp);
+		String amperage = String(supplyAmp);
 		amperage.concat("A");
 		writeToBus(amperage);
 }
 
 void sendFrequency(){
-			String frequency = String(supplyFrequency)
+		String frequency = String(supplyFrequency);
 		frequency.concat("H");
 		writeToBus(frequency);
 }
@@ -235,7 +252,7 @@ void sendFrequency(){
 void sendKws(){
 		String kwSec = String(totalKWattSeconds);
 		kwSec.concat("W");
-		writeToBus(totalKWattSeconds);
+		writeToBus(kwSec);
 }
 
 void sendVoltage(){
@@ -254,6 +271,10 @@ void writeToBus(String serializedStats){
 
 void setup()
 {
+	//pin modes
+	pinMode(KITCHEN_SW,OUTPUT);
+	pinMode(BEDROOM_SW,OUTPUT);
+
 	Serial.begin(9600);
 	_vcc = _readVcc()/1000.0;	
 	Serial.print("Internal VCC :");Serial.println(_vcc);
