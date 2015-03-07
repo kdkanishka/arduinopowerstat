@@ -199,25 +199,49 @@ void dataReceived(int nBytes){
 void respondToMaster(){
 	switch(statPos) {
 	case 1:
-		writeToBus("230.12V");
-		sktatPos++;
+		sendVoltage();
+		statPos++;
 		break;
 	case 2:
-		writeToBus("30.12A");
+		sendAmp();
 		statPos++;
 		break;
 	case 3:
-		writeToBus("50.12H");
+		sendFrequency();
 		statPos++;
 		break;
 	case 4:
-		writeToBus("12424355452233.44W");
+		sendKws();
 		statPos++;
 		break;
 	default:
 		statPos=2;
-		writeToBus("230.12V");
+		sendVoltage();
 	}
+}
+
+void sendAmp(){
+			String amperage = String(supplyAmp);
+		amperage.concat("A");
+		writeToBus(amperage);
+}
+
+void sendFrequency(){
+			String frequency = String(supplyFrequency)
+		frequency.concat("H");
+		writeToBus(frequency);
+}
+
+void sendKws(){
+		String kwSec = String(totalKWattSeconds);
+		kwSec.concat("W");
+		writeToBus(totalKWattSeconds);
+}
+
+void sendVoltage(){
+		String voltage = String(supplyVoltage);
+		voltage.concat("V");
+		writeToBus(voltage);
 }
 
 void writeToBus(String serializedStats){
